@@ -30,6 +30,10 @@ function isUUID(str) {
     return uuidRegex.test(str);
 }
 
+app.get("", async (req, res) => {
+    res.status(200).jsonp({ message: "App is running!" });
+});
+
 app.get("/:filename", async (req, res) => {
     try {
         const fileName = req.params.filename;

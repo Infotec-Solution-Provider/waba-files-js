@@ -1,6 +1,5 @@
 import express from "express";
 import multer from "multer";
-import { Mime } from "mime";
 import fs, { readFileSync, existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
@@ -8,8 +7,6 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import axios from "axios";
 
-
-// Use essas duas linhas para obter o diretório atual em um módulo ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -99,7 +96,6 @@ app.post("/waba-file", async (req, res) => {
             throw new Error(`Failed to fetch data. Status: ${response.status}`);
         }
 
-        // Obtenha a extensão do cabeçalho de resposta, se disponível
         const contentType = response.headers['content-type'];
         const extMatch = contentType && contentType.match(/\/([a-zA-Z]+)/);
         const ext = extMatch ? extMatch[1] : '';
@@ -107,11 +103,9 @@ app.post("/waba-file", async (req, res) => {
         console.log(response.headers)
         const uuid = randomUUID();
 
-        // Use import.meta.url para obter o caminho do diretório atual em um módulo ESM
         const currentDir = dirname(fileURLToPath(import.meta.url));
         const filePath = join(currentDir, "/files", `${uuid}.${ext}`);
-
-        // Use writeFileAsync para salvar o arquivo
+        
         writeFileSync(filePath, response.data);
 
         res.status(201).json({ filename: `${uuid}.${ext}` });

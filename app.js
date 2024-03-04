@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { readFileSync, existsSync, writeFileSync, unlinkSync } from "node:fs";
+import { readFileSync, existsSync, writeFileSync, unlinkSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from 'url';
@@ -8,6 +8,7 @@ import { dirname } from 'path';
 import axios from "axios";
 import { Readable } from "node:stream";
 import { spawn } from "node:child_process";
+import FormData from "form-data";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -35,20 +36,24 @@ function isUUID(str) {
 app.post("/convert-to-mp3", upload.single("file"), async (req, res) => {
     try {
         const tempPath = join(__dirname, "/files/temp");
+        const { numberId, token } = req.body;
+        console.log(req.body)
 
         if (!existsSync(tempPath)) {
             mkdirSync(tempPath);
         }
 
-        const savePath = join(tempPath, `${randomUUID()}.mp3`);
+        const filename = `${randomUUID()}.ogg`;
+        const savePath = join(tempPath, filename);
         const readableStream = new Readable();
         readableStream.push(req.file.buffer);
         readableStream.push(null);
 
         const ffmpeg = spawn('ffmpeg', [
             '-i', 'pipe:0',
-            '-acodec', 'libmp3lame',  // Usando libmp3lame codec para MP3
-            '-b:a', '192k',            // Defina a taxa de bits adequada (ajuste conforme necessário)
+            '-acodec', 'libopus', // Usando libopus codec para OGG
+            '-b:a', '192k',
+            '-f', 'ogg',    // Defina a taxa de bits adequada (ajuste conforme necessário)
             savePath
         ]);
 
@@ -60,14 +65,13 @@ app.post("/convert-to-mp3", upload.single("file"), async (req, res) => {
 
         ffmpeg.on('close', async (code) => {
             if (code === 0) {
-                res.sendFile(savePath, (err) => {
-                    if (err) {
-                        console.error(err);
-                        res.status(500).send('Erro ao enviar o arquivo como resposta');
-                    } else {
-                        unlinkSync(savePath);
-                    }
-                });
+                const convertedBuffer = readFileSync(savePath);
+
+                console.log(token, numberId)
+                // Chama a função de upload com o buffer convertido
+                const mediaId = await uploadMedia(numberId, convertedBuffer, filename, "audio/ogg; codec=opus", token);
+
+                res.send(mediaId);
             } else {
                 res.status(500).send(`Erro ao converter para MP3, código de saída: ${code}`);
             }
@@ -84,6 +88,37 @@ app.post("/convert-to-mp3", upload.single("file"), async (req, res) => {
         res.status(500).send(err.message || 'Erro desconhecido ao processar a requisição');
     }
 });
+
+async function uploadMedia(numberId, file, filename, mimetype, token) {
+    try {
+
+        const fileRequestURL = `https://graph.facebook.com/v16.0/${numberId}/media`;
+        const fileRequestForm = new FormData();
+
+        fileRequestForm.append('file', file, {
+            filename: filename,
+            contentType: mimetype
+        });
+
+        fileRequestForm.append('type', mimetype);
+        fileRequestForm.append('messaging_product', "whatsapp");
+
+        const fileRequestHeaders = fileRequestForm.getHeaders();
+        const fileRequestOptions = {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                ...fileRequestHeaders // Incluindo todos os headers necessários
+            }
+        };
+
+        const response = await axios.post(fileRequestURL, fileRequestForm, fileRequestOptions);
+
+        return response.data;
+    } catch (err) {
+        console.error(err.response.data)
+        return null;
+    }
+}
 
 app.get("/:filename", async (req, res) => {
     try {

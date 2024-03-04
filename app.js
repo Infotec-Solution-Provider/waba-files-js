@@ -1,11 +1,13 @@
 import express from "express";
 import multer from "multer";
-import fs, { readFileSync, existsSync, writeFileSync } from "node:fs";
+import { readFileSync, existsSync, writeFileSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import axios from "axios";
+import { Readable } from "node:stream";
+import { spawn } from "node:child_process";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -30,8 +32,57 @@ function isUUID(str) {
     return uuidRegex.test(str);
 }
 
-app.get("", async (req, res) => {
-    res.status(200).jsonp({ message: "App is running!" });
+app.post("/convert-to-mp3", upload.single("file"), async (req, res) => {
+    try {
+        const tempPath = join(__dirname, "/files/temp");
+
+        if (!existsSync(tempPath)) {
+            mkdirSync(tempPath);
+        }
+
+        const savePath = join(tempPath, `${randomUUID()}.mp3`);
+        const readableStream = new Readable();
+        readableStream.push(req.file.buffer);
+        readableStream.push(null);
+
+        const ffmpeg = spawn('ffmpeg', [
+            '-i', 'pipe:0',
+            '-acodec', 'libmp3lame',  // Usando libmp3lame codec para MP3
+            '-b:a', '192k',            // Defina a taxa de bits adequada (ajuste conforme necessário)
+            savePath
+        ]);
+
+        const chunks = [];
+
+        ffmpeg.stdout.on('data', (chunk) => {
+            chunks.push(chunk);
+        });
+
+        ffmpeg.on('close', async (code) => {
+            if (code === 0) {
+                res.sendFile(savePath, (err) => {
+                    if (err) {
+                        console.error(err);
+                        res.status(500).send('Erro ao enviar o arquivo como resposta');
+                    } else {
+                        unlinkSync(savePath);
+                    }
+                });
+            } else {
+                res.status(500).send(`Erro ao converter para MP3, código de saída: ${code}`);
+            }
+        });
+
+        ffmpeg.on('error', (err) => {
+            res.status(500).send(err.message || 'Erro desconhecido ao converter para MP3');
+        });
+
+        readableStream.pipe(ffmpeg.stdin);
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).send(err.message || 'Erro desconhecido ao processar a requisição');
+    }
 });
 
 app.get("/:filename", async (req, res) => {
@@ -109,7 +160,7 @@ app.post("/waba-file", async (req, res) => {
 
         const currentDir = dirname(fileURLToPath(import.meta.url));
         const filePath = join(currentDir, "/files", `${uuid}.${ext}`);
-        
+
         writeFileSync(filePath, response.data);
 
         res.status(201).json({ filename: `${uuid}.${ext}` });

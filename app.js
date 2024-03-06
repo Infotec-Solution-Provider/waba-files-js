@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { readFileSync, existsSync, writeFileSync, unlinkSync, mkdirSync } from "node:fs";
+import { readFileSync, existsSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from 'url';
@@ -9,6 +9,7 @@ import axios from "axios";
 import { Readable } from "node:stream";
 import { spawn } from "node:child_process";
 import FormData from "form-data";
+import mime from "mime";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -37,7 +38,6 @@ app.post("/convert-to-mp3", upload.single("file"), async (req, res) => {
     try {
         const tempPath = join(__dirname, "/files/temp");
         const { numberId, token } = req.body;
-        console.log(req.body)
 
         if (!existsSync(tempPath)) {
             mkdirSync(tempPath);
@@ -67,7 +67,6 @@ app.post("/convert-to-mp3", upload.single("file"), async (req, res) => {
             if (code === 0) {
                 const convertedBuffer = readFileSync(savePath);
 
-                console.log(token, numberId)
                 // Chama a função de upload com o buffer convertido
                 const mediaId = await uploadMedia(numberId, convertedBuffer, filename, "audio/ogg; codec=opus", token);
 
@@ -115,7 +114,7 @@ async function uploadMedia(numberId, file, filename, mimetype, token) {
 
         return response.data;
     } catch (err) {
-        console.error(err.response.data)
+        console.error(err.response?.data || err)
         return null;
     }
 }
@@ -204,6 +203,30 @@ app.post("/waba-file", async (req, res) => {
         res.status(500).json({ message: "Failed to fetch data" });
     }
 });
+
+app.post("/media-id/:filename", async (req, res) => {
+    const { numberId, token } = req.body;
+    const fileName = req.params.filename;
+
+    console.log(req.body);
+
+    const searchFilePath = join(__dirname, "/files", fileName);
+
+    if (!existsSync(searchFilePath)) {
+        return res.status(404).json({ message: "File not found" });
+    }
+
+    const file = readFileSync(searchFilePath);
+    const mimeType = mime.getType(searchFilePath);
+    const haveUUID = isUUID(fileName.split("_")[0])
+    const fileNameWithoutUUID = haveUUID ? fileName.split("_").slice(1).join("_") : fileName;
+
+    const mediaId = await uploadMedia(numberId, file, fileNameWithoutUUID, mimeType, token);
+
+    console.log(mediaId);
+
+    res.send({ ...mediaId, mimeType });
+})
 
 app.listen(7000, () => {
     logWithDate("App listening on port 7000")

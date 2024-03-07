@@ -1,142 +1,57 @@
-import express from "express";
-import multer from "multer";
-import { readFileSync, existsSync, writeFileSync, mkdirSync } from "node:fs";
-import { join } from "node:path";
-import { randomUUID } from "node:crypto";
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import axios from "axios";
-import { Readable } from "node:stream";
-import { spawn } from "node:child_process";
-import FormData from "form-data";
+import express from "express";
 import mime from "mime";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import multer from "multer";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { __dirname, filesPath, tempPath } from "./dirname.js";
+import { logWithDate } from "./utils/logWithDate.js";
+import { saveAudioAsMp3 } from "./utils/saveAudioAsMp3.js";
+import { unrandomFilename } from "./utils/unrandomFilename.js";
+import { randomFilename } from "./utils/randomFilename.js";
+import { uploadMedia } from "./utils/uploadMedia.js";
 
 const app = express();
 const upload = multer();
 
 app.use(express.json());
 
-function logWithDate(str, error) {
-    const dateSring = new Date().toLocaleString();
-
-    if (error) {
-        console.error(`${dateSring}: ${str}`, error);
-    } else {
-        console.log(`${dateSring}: ${str}`);
-    }
-}
-
-function isUUID(str) {
-    const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-    return uuidRegex.test(str);
-}
-
 app.post("/convert-to-mp3", upload.single("file"), async (req, res) => {
     try {
-        const tempPath = join(__dirname, "/files/temp");
         const { numberId, token } = req.body;
 
         if (!existsSync(tempPath)) {
             mkdirSync(tempPath);
         }
 
-        const filename = `${randomUUID()}.ogg`;
-        const savePath = join(tempPath, filename);
-        const readableStream = new Readable();
-        readableStream.push(req.file.buffer);
-        readableStream.push(null);
+        await saveAudioAsMp3(req.file.buffer, tempPath, req.file.originalname, async (path, filename) => {
+            const convertedBuffer = readFileSync(path);
+            const mimeType = mime.getType(path);
+            const mediaId = await uploadMedia(numberId, convertedBuffer, filename, mimeType, token);
 
-        const ffmpeg = spawn('ffmpeg', [
-            '-i', 'pipe:0',
-            '-acodec', 'libopus', // Usando libopus codec para OGG
-            '-b:a', '192k',
-            '-f', 'ogg',    // Defina a taxa de bits adequada (ajuste conforme necessário)
-            savePath
-        ]);
-
-        const chunks = [];
-
-        ffmpeg.stdout.on('data', (chunk) => {
-            chunks.push(chunk);
+            res.send(mediaId);
         });
-
-        ffmpeg.on('close', async (code) => {
-            if (code === 0) {
-                const convertedBuffer = readFileSync(savePath);
-
-                // Chama a função de upload com o buffer convertido
-                const mediaId = await uploadMedia(numberId, convertedBuffer, filename, "audio/ogg; codec=opus", token);
-
-                res.send(mediaId);
-            } else {
-                res.status(500).send(`Erro ao converter para MP3, código de saída: ${code}`);
-            }
-        });
-
-        ffmpeg.on('error', (err) => {
-            res.status(500).send(err.message || 'Erro desconhecido ao converter para MP3');
-        });
-
-        readableStream.pipe(ffmpeg.stdin);
-
     } catch (err) {
         console.error(err);
         res.status(500).send(err.message || 'Erro desconhecido ao processar a requisição');
     }
 });
 
-async function uploadMedia(numberId, file, filename, mimetype, token) {
-    try {
-
-        const fileRequestURL = `https://graph.facebook.com/v16.0/${numberId}/media`;
-        const fileRequestForm = new FormData();
-
-        fileRequestForm.append('file', file, {
-            filename: filename,
-            contentType: mimetype
-        });
-
-        fileRequestForm.append('type', mimetype);
-        fileRequestForm.append('messaging_product', "whatsapp");
-
-        const fileRequestHeaders = fileRequestForm.getHeaders();
-        const fileRequestOptions = {
-            headers: {
-                Authorization: `Bearer ${token}`,
-                ...fileRequestHeaders // Incluindo todos os headers necessários
-            }
-        };
-
-        const response = await axios.post(fileRequestURL, fileRequestForm, fileRequestOptions);
-
-        return response.data;
-    } catch (err) {
-        console.error(err.response?.data || err)
-        return null;
-    }
-}
-
 app.get("/:filename", async (req, res) => {
     try {
-        const fileName = req.params.filename;
-        const searchFilePath = join(__dirname, "/files", fileName);
+        const filename = req.params.filename;
+        const searchFilePath = join(filesPath, filename);
 
         if (!existsSync(searchFilePath)) {
             return res.status(404).json({ message: "File not found" });
         }
         const file = readFileSync(searchFilePath);
-        const haveUUID = isUUID(fileName.split("_")[0])
-        const fileNameWithoutUUID = haveUUID ? fileName.split("_").slice(1).join("_") : fileName;
 
-        res.setHeader('Content-Disposition', `inline; filename="${fileNameWithoutUUID}"`);
+        res.setHeader('Content-Disposition', `inline; filename="${unrandomFilename(filename)}"`);
         res.end(file);
 
-        logWithDate("Get file success =>", fileName);
+        logWithDate("Get file success =>", filename);
     } catch (err) {
-        // Log and send error response
         logWithDate("Get file failure =>", err);
         res.status(500).json({ message: "Something went wrong" });
     }
@@ -149,16 +64,18 @@ app.post("", upload.single("file"), async (req, res) => {
             return;
         }
 
-        const uuid = randomUUID();
-        const filename = req.file.originalname.split(".")[0]
-        const ext = req.file.originalname.split(".")[1]
-        const generatedName = `${uuid}_${filename}.${ext}`;
-        const filePath = join(__dirname, "/files", generatedName);
+        if (req.file.mimetype.includes("audio")) {
+            const filename = await saveAudioAsMp3(req.file.buffer, filesPath, req.file.originalname);
 
-        writeFileSync(filePath, req.file.buffer);
+            res.status(201).json({ filename });
+        } else {
+            const filename = randomFilename(req.file.originalname);
+            const savePath = join(filesPath, filename);
 
-        res.status(201).json({ filename: generatedName });
+            writeFileSync(savePath, req.file.buffer);
 
+            res.status(201).json({ filename });
+        }
     } catch (err) {
         logWithDate("Upload file failure => ", err);
         res.status(500).json({ message: "Something went wrong" });
@@ -176,7 +93,7 @@ app.post("/waba-file", async (req, res) => {
             method: 'get',
             headers: myHeaders,
             url,
-            responseType: 'arraybuffer', // Indica que esperamos uma resposta binária
+            responseType: 'arraybuffer',
         };
 
         const response = await axios(axiosConfig);
@@ -188,16 +105,19 @@ app.post("/waba-file", async (req, res) => {
         const contentType = response.headers['content-type'];
         const extMatch = contentType && contentType.match(/\/([a-zA-Z]+)/);
         const ext = extMatch ? extMatch[1] : '';
+        const buffer = response.data;
 
-        console.log(response.headers)
-        const uuid = randomUUID();
+        if (contentType.includes("audio")) {
+            const filename = await saveAudioAsMp3(buffer, filesPath, `audio.${ext}`);
 
-        const currentDir = dirname(fileURLToPath(import.meta.url));
-        const filePath = join(currentDir, "/files", `${uuid}.${ext}`);
+            res.status(201).json({ filename });
+        } else {
+            const filename = randomFilename(`file.${ext}`);
+            const filePath = join(filesPath, filename);
+            writeFileSync(filePath, buffer);
 
-        writeFileSync(filePath, response.data);
-
-        res.status(201).json({ filename: `${uuid}.${ext}` });
+            res.status(201).json({ filename });
+        }
     } catch (err) {
         logWithDate("Fetch error => ", err);
         res.status(500).json({ message: "Failed to fetch data" });
@@ -208,8 +128,6 @@ app.post("/media-id/:filename", async (req, res) => {
     const { numberId, token } = req.body;
     const fileName = req.params.filename;
 
-    console.log(req.body);
-
     const searchFilePath = join(__dirname, "/files", fileName);
 
     if (!existsSync(searchFilePath)) {
@@ -218,12 +136,9 @@ app.post("/media-id/:filename", async (req, res) => {
 
     const file = readFileSync(searchFilePath);
     const mimeType = mime.getType(searchFilePath);
-    const haveUUID = isUUID(fileName.split("_")[0])
-    const fileNameWithoutUUID = haveUUID ? fileName.split("_").slice(1).join("_") : fileName;
+    const fileNameWithoutUUID = unrandomFilename(fileName);
 
     const mediaId = await uploadMedia(numberId, file, fileNameWithoutUUID, mimeType, token);
-
-    console.log(mediaId);
 
     res.send({ ...mediaId, mimeType });
 })

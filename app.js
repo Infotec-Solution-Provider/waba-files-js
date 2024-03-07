@@ -10,52 +10,12 @@ import { saveAudioAsMp3 } from "./utils/saveAudioAsMp3.js";
 import { unrandomFilename } from "./utils/unrandomFilename.js";
 import { randomFilename } from "./utils/randomFilename.js";
 import { uploadMedia } from "./utils/uploadMedia.js";
+import { decodeSafeURIComponent } from "./utils/decodeSafeURIComponent.js";
 
 const app = express();
 const upload = multer();
 
 app.use(express.json());
-
-app.post("/convert-to-mp3", upload.single("file"), async (req, res) => {
-    try {
-        const { numberId, token } = req.body;
-
-        if (!existsSync(tempPath)) {
-            mkdirSync(tempPath);
-        }
-
-        await saveAudioAsMp3(req.file.buffer, tempPath, req.file.originalname, async (path, filename) => {
-            const convertedBuffer = readFileSync(path);
-            const mimeType = mime.getType(path);
-            const mediaId = await uploadMedia(numberId, convertedBuffer, filename, mimeType, token);
-
-            res.send(mediaId);
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send(err.message || 'Erro desconhecido ao processar a requisição');
-    }
-});
-
-app.get("/:filename", async (req, res) => {
-    try {
-        const filename = req.params.filename;
-        const searchFilePath = join(filesPath, filename);
-
-        if (!existsSync(searchFilePath)) {
-            return res.status(404).json({ message: "File not found" });
-        }
-        const file = readFileSync(searchFilePath);
-
-        res.setHeader('Content-Disposition', `inline; filename="${unrandomFilename(filename)}"`);
-        res.end(file);
-
-        logWithDate("Get file success =>", filename);
-    } catch (err) {
-        logWithDate("Get file failure =>", err);
-        res.status(500).json({ message: "Something went wrong" });
-    }
-});
 
 app.post("", upload.single("file"), async (req, res) => {
     try {
@@ -69,7 +29,7 @@ app.post("", upload.single("file"), async (req, res) => {
 
             res.status(201).json({ filename });
         } else {
-            const filename = randomFilename(req.file.originalname);
+            const filename = randomFilename(decodeSafeURIComponent(req.file.originalname));
             const savePath = join(filesPath, filename);
 
             writeFileSync(savePath, req.file.buffer);
@@ -82,9 +42,32 @@ app.post("", upload.single("file"), async (req, res) => {
     }
 });
 
+app.get("/:filename", async (req, res) => {
+    try {
+        const filename = req.params.filename;
+        const searchFilePath = join(filesPath, filename);
+
+        if (!existsSync(searchFilePath)) {
+            return res.status(404).json({ message: "File not found" });
+        }
+        const file = readFileSync(searchFilePath);
+
+        const fileNameWithoutUUID = unrandomFilename(filename);
+
+        res.setHeader('Content-Disposition', `inline; filename="${fileNameWithoutUUID}"`);
+
+        res.end(file);
+
+        logWithDate("Get file success =>", filename);
+    } catch (err) {
+        logWithDate("Get file failure =>", err);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+});
+
 app.post("/waba-file", async (req, res) => {
     try {
-        const { token, url } = req.body;
+        const { token, url, filename: originalname } = req.body;
         const myHeaders = {
             'Authorization': `Bearer ${token}`,
         };
@@ -112,7 +95,7 @@ app.post("/waba-file", async (req, res) => {
 
             res.status(201).json({ filename });
         } else {
-            const filename = randomFilename(`file.${ext}`);
+            const filename = randomFilename(originalname || `file.${ext}`);
             const filePath = join(filesPath, filename);
             writeFileSync(filePath, buffer);
 
@@ -142,6 +125,27 @@ app.post("/media-id/:filename", async (req, res) => {
 
     res.send({ ...mediaId, mimeType });
 })
+
+app.post("/convert-to-mp3", upload.single("file"), async (req, res) => {
+    try {
+        const { numberId, token } = req.body;
+
+        if (!existsSync(tempPath)) {
+            mkdirSync(tempPath);
+        }
+
+        await saveAudioAsMp3(req.file.buffer, tempPath, req.file.originalname, async (path, filename) => {
+            const convertedBuffer = readFileSync(path);
+            const mimeType = mime.getType(path);
+            const mediaId = await uploadMedia(numberId, convertedBuffer, filename, mimeType, token);
+
+            res.send(mediaId);
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send(err.message || 'Erro desconhecido ao processar a requisição');
+    }
+});
 
 app.listen(7000, () => {
     logWithDate("App listening on port 7000")

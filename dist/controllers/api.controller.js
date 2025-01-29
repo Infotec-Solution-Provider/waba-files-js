@@ -17,6 +17,11 @@ class ApiController {
         this.router.post("/waba-file", this.handleGetWABAFile);
         this.router.post("/convert-to-mp3", this.upload.single("file"), this.handleGetAudioWABAMediaId);
         this.router.post("media-id/:filename", this.handleGetWABAMediaId);
+        this.handleUploadFile = this.handleUploadFile.bind(this);
+        this.handleDownloadFile = this.handleDownloadFile.bind(this);
+        this.handleGetWABAFile = this.handleGetWABAFile.bind(this);
+        this.handleGetWABAMediaId = this.handleGetWABAMediaId.bind(this);
+        this.handleGetAudioWABAMediaId = this.handleGetAudioWABAMediaId.bind(this);
     }
     async handleUploadFile(req, res) {
         try {

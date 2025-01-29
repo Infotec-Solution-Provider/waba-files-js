@@ -1,12 +1,12 @@
 import { Request, Response, Router } from "express";
 import multer from "multer";
-import apiService from "../services/api.service";
+import APIService from "../services/api.service";
 import Log from "../utils/log";
 
 class ApiController {
     public readonly router = Router();
     private readonly upload = multer();
-    private readonly apiService = apiService;
+    private readonly apiService = APIService;
 
     constructor() {
         this.router.post("", this.upload.single("file"), this.handleUploadFile);
@@ -14,6 +14,12 @@ class ApiController {
         this.router.post("/waba-file", this.handleGetWABAFile);
         this.router.post("/convert-to-mp3", this.upload.single("file"), this.handleGetAudioWABAMediaId);
         this.router.post("media-id/:filename", this.handleGetWABAMediaId);
+
+        this.handleUploadFile = this.handleUploadFile.bind(this);
+        this.handleDownloadFile = this.handleDownloadFile.bind(this);
+        this.handleGetWABAFile = this.handleGetWABAFile.bind(this);
+        this.handleGetWABAMediaId = this.handleGetWABAMediaId.bind(this);
+        this.handleGetAudioWABAMediaId = this.handleGetAudioWABAMediaId.bind(this);
     }
 
     private async handleUploadFile(req: Request, res: Response) {

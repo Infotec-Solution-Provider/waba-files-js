@@ -3,7 +3,7 @@ import convertBufferToMp3 from "../utils/convertBuferToMp3";
 import getRandomFilename from "../utils/getRandomFilename";
 import { join } from "node:path";
 import getOriginalFilename from "../utils/getOriginalFilename";
-import mime from "mime";
+import mime from "mime-types";
 import { config } from "dotenv";
 
 config();
@@ -47,7 +47,7 @@ class StorageService {
         const filePath = join(this.filesPath, filename);
         const buffer = await readFile(filePath);
         const originalname = getOriginalFilename(filename);
-        const mimetype = mime.getType(filePath) || "";
+        const mimetype = mime.lookup(filePath) || "";
 
         const file = new File([buffer], originalname, { type: mimetype });
 

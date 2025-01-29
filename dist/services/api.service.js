@@ -18,8 +18,7 @@ class ApiService {
     }
     async getFileFromWABAUrl(url, originalname) {
         const file = await this.wabaService.downloadWABAFile(url, originalname);
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const savedFilename = await this.storageService.saveFile(buffer, file.type, file.name);
+        const savedFilename = await this.storageService.saveFile(file.buffer, file.type, file.name);
         return savedFilename;
     }
     async uploadFileToWABA(filename) {

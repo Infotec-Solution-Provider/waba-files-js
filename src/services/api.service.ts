@@ -1,3 +1,4 @@
+import File from "../entities/file";
 import storageService from "./storage.service";
 import WABAService from "./waba.service";
 
@@ -31,8 +32,7 @@ class ApiService {
 
     public async getFileFromWABAUrl(url: string, originalname: string): Promise<string> {
         const file = await this.wabaService.downloadWABAFile(url, originalname);
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const savedFilename = await this.storageService.saveFile(buffer, file.type, file.name);
+        const savedFilename = await this.storageService.saveFile(file.buffer, file.type, file.name);
 
         return savedFilename;
     }

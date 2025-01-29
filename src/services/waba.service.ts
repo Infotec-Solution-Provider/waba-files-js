@@ -1,6 +1,7 @@
 import axios from "axios";
 import FormData from "form-data";
 import { config } from "dotenv";
+import File from "../entities/file";
 
 config();
 
@@ -26,7 +27,7 @@ class WABAService {
         }
 
         const contentType = response.headers['content-type'];
-        const file = new File([response.data], originalname, { type: contentType });
+        const file = new File(Buffer.from(response.data), originalname, contentType);
 
         return file;
     }
@@ -35,9 +36,7 @@ class WABAService {
         const requestUrl = `https://graph.facebook.com/v16.0/${this.WABANumberId}/media`;
         const formData = new FormData();
 
-        const fileBlob = new Blob([await file.arrayBuffer()], { type: file.type });
-
-        formData.append("file", fileBlob, file.name);
+        formData.append("file", file.buffer, file.name);
         formData.append("type", file.type);
         formData.append("messaging_product", "whatsapp");
 

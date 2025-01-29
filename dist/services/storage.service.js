@@ -10,6 +10,7 @@ const node_path_1 = require("node:path");
 const getOriginalFilename_1 = __importDefault(require("../utils/getOriginalFilename"));
 const mime_types_1 = __importDefault(require("mime-types"));
 const dotenv_1 = require("dotenv");
+const file_1 = __importDefault(require("../entities/file"));
 (0, dotenv_1.config)();
 class StorageService {
     filesPath = process.env["FILES_PATH"] || "C:/wa_files";
@@ -29,7 +30,7 @@ class StorageService {
         const buffer = await (0, promises_1.readFile)(filePath);
         const originalname = (0, getOriginalFilename_1.default)(filename);
         const mimetype = mime_types_1.default.lookup(filePath) || "";
-        const file = new File([buffer], originalname, { type: mimetype });
+        const file = new file_1.default(buffer, originalname, mimetype);
         return file;
     }
 }

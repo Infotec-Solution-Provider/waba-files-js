@@ -1,5 +1,6 @@
 /// <reference types="node" />
 /// <reference types="node" />
+import File from "../entities/file";
 declare class StorageService {
     private readonly filesPath;
     saveFile(buffer: Buffer, mimeType: string, originalname: string): Promise<string>;

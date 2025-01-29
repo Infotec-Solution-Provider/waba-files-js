@@ -1,3 +1,4 @@
+import File from "../entities/file";
 declare class WABAService {
     private readonly WABAToken;
     private readonly WABANumberId;

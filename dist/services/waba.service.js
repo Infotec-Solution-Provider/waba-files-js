@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const axios_1 = __importDefault(require("axios"));
 const form_data_1 = __importDefault(require("form-data"));
 const dotenv_1 = require("dotenv");
+const file_1 = __importDefault(require("../entities/file"));
 (0, dotenv_1.config)();
 class WABAService {
     WABAToken = process.env["WABA_TOKEN"];
@@ -18,14 +19,13 @@ class WABAService {
             throw new Error("Error while downloading file. Status: " + response.status);
         }
         const contentType = response.headers['content-type'];
-        const file = new File([response.data], originalname, { type: contentType });
+        const file = new file_1.default(Buffer.from(response.data), originalname, contentType);
         return file;
     }
     async uploadWABAFile(file) {
         const requestUrl = `https://graph.facebook.com/v16.0/${this.WABANumberId}/media`;
         const formData = new form_data_1.default();
-        const fileBlob = new Blob([await file.arrayBuffer()], { type: file.type });
-        formData.append("file", fileBlob, file.name);
+        formData.append("file", file.buffer, file.name);
         formData.append("type", file.type);
         formData.append("messaging_product", "whatsapp");
         const headers = { 'Authorization': `Bearer ${this.WABAToken}`, ...formData.getHeaders() };

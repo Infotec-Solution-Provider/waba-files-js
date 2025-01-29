@@ -1,4 +1,5 @@
 /// <reference types="multer" />
+import File from "../entities/file";
 declare class ApiService {
     private readonly storageService;
     private readonly wabaService;

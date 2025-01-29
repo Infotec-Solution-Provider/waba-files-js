@@ -5,6 +5,7 @@ import { join } from "node:path";
 import getOriginalFilename from "../utils/getOriginalFilename";
 import mime from "mime-types";
 import { config } from "dotenv";
+import File from "../entities/file";
 
 config();
 
@@ -49,7 +50,7 @@ class StorageService {
         const originalname = getOriginalFilename(filename);
         const mimetype = mime.lookup(filePath) || "";
 
-        const file = new File([buffer], originalname, { type: mimetype });
+        const file = new File(buffer, originalname, mimetype);
 
         return file;
     }

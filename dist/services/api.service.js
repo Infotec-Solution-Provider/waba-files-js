@@ -6,12 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const storage_service_1 = __importDefault(require("./storage.service"));
 const waba_service_1 = __importDefault(require("./waba.service"));
 class ApiService {
-    storageService;
-    wabaService;
-    constructor(storageService, wabaService) {
-        this.storageService = storageService;
-        this.wabaService = wabaService;
-    }
+    storageService = storage_service_1.default;
+    wabaService = waba_service_1.default;
     async saveFileToLocalStorage(file) {
         const savedFilename = await this.storageService.saveFile(file.buffer, file.mimetype, file.originalname);
         return savedFilename;
@@ -32,5 +28,6 @@ class ApiService {
         return response;
     }
 }
-exports.default = new ApiService(storage_service_1.default, waba_service_1.default);
+const apiService = new ApiService();
+exports.default = apiService;
 //# sourceMappingURL=api.service.js.map

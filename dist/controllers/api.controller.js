@@ -63,11 +63,13 @@ class ApiController {
     }
     async handleGetWABAMediaId(req, res) {
         try {
+            log_1.default.debug(`Iniciando handleGetWABAMediaId com filename: ${req.params["filename"]}`);
             if (!req.params["filename"]) {
                 res.status(400).send("No filename provided.");
             }
             else {
                 const mediaId = await api_service_1.default.uploadFileToWABA(req.params["filename"]);
+                log_1.default.debug(`Media ID obtido com sucesso: ${mediaId}`);
                 res.status(200).json(mediaId);
             }
         }

@@ -10,6 +10,11 @@ class Log {
             console.error(error);
         }
     }
+    static debug(message) {
+        if (process.env["DEBUG_MODE"] == "TRUE") {
+            console.log(`${new Date().toLocaleString()} [DEBUG] ${message}`);
+        }
+    }
 }
 exports.default = Log;
 //# sourceMappingURL=log.js.map

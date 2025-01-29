@@ -10,35 +10,39 @@ import { Readable } from "node:stream";
  */
 export default async function convertBufferToMp3(buffer: Buffer): Promise<Buffer> {
     return await new Promise<Buffer>((resolve, reject) => {
-        const readable = new Readable();
+        try {
+            const readable = new Readable();
 
-        readable.push(buffer);
-        readable.push(null);
-
-        const chunks: any[] = [];
-        const ffmpeg = spawn('ffmpeg', [
-            '-i', 'pipe:0',
-            '-c:a', 'libmp3lame',
-            '-b:a', '128k',
-        ]);
-
-        ffmpeg.stdout.on('data', (chunk) => {
-            chunks.push(chunk);
-        });
-
-        ffmpeg.on('close', (code) => {
-            if (code === 0) {
-                resolve(Buffer.concat(chunks));
-            } else {
-                reject(new Error('ffmpeg error'));
-            }
-        });
-
-        ffmpeg.on('error', (err) => {
+            readable.push(buffer);
+            readable.push(null);
+    
+            const chunks: any[] = [];
+            const ffmpeg = spawn('ffmpeg', [
+                '-i', 'pipe:0',
+                '-c:a', 'libmp3lame',
+                '-b:a', '128k',
+            ]);
+    
+            ffmpeg.stdout.on('data', (chunk) => {
+                chunks.push(chunk);
+            });
+    
+            ffmpeg.on('close', (code) => {
+                if (code === 0) {
+                    resolve(Buffer.concat(chunks));
+                } else {
+                    reject(new Error('ffmpeg error'));
+                }
+            });
+    
+            ffmpeg.on('error', (err) => {
+                console.error(err);
+                reject(new Error(`Error in ffmpeg process: ${err.message}`));
+            });
+    
+            readable.pipe(ffmpeg.stdin);
+        } catch (err) {
             console.error(err);
-            reject(new Error(`Error in ffmpeg process: ${err.message}`));
-        });
-
-        readable.pipe(ffmpeg.stdin);
+        }
     });
 }

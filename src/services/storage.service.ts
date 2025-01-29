@@ -30,7 +30,7 @@ class StorageService {
             originalname = (originalname || "file").replace(/\.[^/.]+$/, ".mp3");
         }
 
-        const saveFilename = getRandomFilename(originalname);
+        const saveFilename = getRandomFilename(originalname || "file");
         const savePath = join(this.filesPath, saveFilename);
 
         await writeFile(savePath, buffer);

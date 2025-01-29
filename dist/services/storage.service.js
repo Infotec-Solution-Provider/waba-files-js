@@ -20,7 +20,7 @@ class StorageService {
             mimeType = "audio/mpeg";
             originalname = (originalname || "file").replace(/\.[^/.]+$/, ".mp3");
         }
-        const saveFilename = (0, getRandomFilename_1.default)(originalname);
+        const saveFilename = (0, getRandomFilename_1.default)(originalname || "file");
         const savePath = (0, node_path_1.join)(this.filesPath, saveFilename);
         await (0, promises_1.writeFile)(savePath, buffer);
         return saveFilename;

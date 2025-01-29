@@ -1,18 +1,14 @@
 import { Request, Response, Router } from "express";
 import multer from "multer";
-import ApiService from "../services/api.service";
+import apiService from "../services/api.service";
 import Log from "../utils/log";
 
 class ApiController {
-    public readonly router: Router;
-    private readonly upload: multer.Multer;
-    private readonly apiService: typeof ApiService;
+    public readonly router = Router();
+    private readonly upload = multer();
+    private readonly apiService = apiService;
 
-    constructor(apiService: typeof ApiService) {
-        this.router = Router();
-        this.upload = multer();
-        this.apiService = apiService;
-
+    constructor() {
         this.router.post("", this.upload.single("file"), this.handleUploadFile);
         this.router.get("/:filename", this.handleDownloadFile);
         this.router.post("/waba-file", this.handleGetWABAFile);
@@ -69,7 +65,7 @@ class ApiController {
                 res.status(400).send("No filename provided.");
             } else {
                 const mediaId = await this.apiService.uploadFileToWABA(req.params["filename"]);
-    
+
                 res.status(200).json(mediaId);
             }
 
@@ -96,4 +92,4 @@ class ApiController {
     }
 }
 
-export default new ApiController(ApiService);
+export default new ApiController();

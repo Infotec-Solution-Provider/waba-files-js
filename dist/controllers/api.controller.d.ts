@@ -9,5 +9,5 @@ declare class ApiController {
     private handleGetWABAMediaId;
     private handleGetAudioWABAMediaId;
 }
-declare const _default: ApiController;
-export default _default;
+declare const apiController: ApiController;
+export default apiController;

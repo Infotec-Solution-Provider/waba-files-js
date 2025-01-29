@@ -8,13 +8,10 @@ const multer_1 = __importDefault(require("multer"));
 const api_service_1 = __importDefault(require("../services/api.service"));
 const log_1 = __importDefault(require("../utils/log"));
 class ApiController {
-    router;
-    upload;
-    apiService;
-    constructor(apiService) {
-        this.router = (0, express_1.Router)();
-        this.upload = (0, multer_1.default)();
-        this.apiService = apiService;
+    router = (0, express_1.Router)();
+    upload = (0, multer_1.default)();
+    apiService = api_service_1.default;
+    constructor() {
         this.router.post("", this.upload.single("file"), this.handleUploadFile);
         this.router.get("/:filename", this.handleDownloadFile);
         this.router.post("/waba-file", this.handleGetWABAFile);
@@ -95,5 +92,5 @@ class ApiController {
         }
     }
 }
-exports.default = new ApiController(api_service_1.default);
+exports.default = new ApiController();
 //# sourceMappingURL=api.controller.js.map

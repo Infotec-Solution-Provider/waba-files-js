@@ -1,10 +1,8 @@
-import { Router } from "express";
-import ApiService from "../services/api.service";
 declare class ApiController {
-    readonly router: Router;
+    readonly router: import("express-serve-static-core").Router;
     private readonly upload;
     private readonly apiService;
-    constructor(apiService: typeof ApiService);
+    constructor();
     private handleUploadFile;
     private handleDownloadFile;
     private handleGetWABAFile;

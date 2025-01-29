@@ -10,7 +10,7 @@ import { Readable } from "node:stream";
  */
 export default async function convertBufferToMp3(buffer: Buffer): Promise<Buffer> {
     return await new Promise<Buffer>((resolve, reject) => {
-        try {
+
             const readable = new Readable();
 
             readable.push(buffer);
@@ -31,7 +31,8 @@ export default async function convertBufferToMp3(buffer: Buffer): Promise<Buffer
                 if (code === 0) {
                     resolve(Buffer.concat(chunks));
                 } else {
-                    reject(new Error('ffmpeg error'));
+                    
+                    reject(new Error('ffmpeg error. code: ' + code));
                 }
             });
     
@@ -41,8 +42,5 @@ export default async function convertBufferToMp3(buffer: Buffer): Promise<Buffer
             });
     
             readable.pipe(ffmpeg.stdin);
-        } catch (err) {
-            console.error(err);
-        }
     });
 }

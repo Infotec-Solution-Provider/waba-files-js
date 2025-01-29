@@ -41,9 +41,9 @@ class WABAService {
         formData.append("messaging_product", "whatsapp");
 
         const headers = { 'Authorization': `Bearer ${this.WABAToken}`, ...formData.getHeaders() };
-        const response = await axios.post(requestUrl, formData, { headers });
+        const mediaIdResponse = await axios.post(requestUrl, formData, { headers });
 
-        return response.data;
+        return { ...mediaIdResponse.data, mimeType: file.type };
     }
 }
 

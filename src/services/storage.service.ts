@@ -4,6 +4,9 @@ import getRandomFilename from "../utils/getRandomFilename";
 import { join } from "node:path";
 import getOriginalFilename from "../utils/getOriginalFilename";
 import mime from "mime";
+import { config } from "dotenv";
+
+config();
 
 class StorageService {
     private readonly filesPath: string = process.env.FILES_PATH || "C:/wa_files";

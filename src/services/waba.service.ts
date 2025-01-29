@@ -1,9 +1,12 @@
 import axios from "axios";
 import FormData from "form-data";
+import { config } from "dotenv";
+
+config();
 
 class WABAService {
-    private readonly WABAToken: string;
-    private readonly WABANumberId: string;
+    private readonly WABAToken = process.env.WABA_TOKEN;
+    private readonly WABANumberId = process.env.WABA_NUMBER_ID;
 
     /**
      * Downloads a file from the given URL and returns it as a `File` object.

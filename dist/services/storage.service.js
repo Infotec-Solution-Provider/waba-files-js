@@ -8,7 +8,7 @@ const convertBuferToMp3_1 = __importDefault(require("../utils/convertBuferToMp3"
 const getRandomFilename_1 = __importDefault(require("../utils/getRandomFilename"));
 const node_path_1 = require("node:path");
 const getOriginalFilename_1 = __importDefault(require("../utils/getOriginalFilename"));
-const mime_1 = __importDefault(require("mime"));
+const mime_types_1 = __importDefault(require("mime-types"));
 const dotenv_1 = require("dotenv");
 (0, dotenv_1.config)();
 class StorageService {
@@ -28,7 +28,7 @@ class StorageService {
         const filePath = (0, node_path_1.join)(this.filesPath, filename);
         const buffer = await (0, promises_1.readFile)(filePath);
         const originalname = (0, getOriginalFilename_1.default)(filename);
-        const mimetype = mime_1.default.getType(filePath) || "";
+        const mimetype = mime_types_1.default.lookup(filePath) || "";
         const file = new File([buffer], originalname, { type: mimetype });
         return file;
     }

@@ -38,7 +38,9 @@ class ApiController {
             } else {
                 const file = await apiService.getFileFromLocalStorage(req.params["filename"]);
 
-                res.status(200).send(file);
+                res.setHeader("Content-Disposition", `attachment; filename=${file.name}`);
+                res.contentType(file.type);
+                res.send(file.buffer);
             }
         } catch (err) {
             Log.error(err, `Falha no download do arquivo: ${req.params["filename"]}`);

@@ -25,6 +25,7 @@ async function convertBufferToMp3(buffer) {
             }
         });
         ffmpeg.on('error', (err) => {
+            console.error(err);
             reject(new Error(`Error in ffmpeg process: ${err.message}`));
         });
         readable.pipe(ffmpeg.stdin);

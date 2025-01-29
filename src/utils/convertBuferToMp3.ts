@@ -35,6 +35,7 @@ export default async function convertBufferToMp3(buffer: Buffer): Promise<Buffer
         });
 
         ffmpeg.on('error', (err) => {
+            console.error(err);
             reject(new Error(`Error in ffmpeg process: ${err.message}`));
         });
 

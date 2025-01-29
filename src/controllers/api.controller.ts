@@ -1,12 +1,11 @@
 import { Request, Response, Router } from "express";
 import multer from "multer";
-import APIService from "../services/api.service";
+import apiService from "../services/api.service";
 import Log from "../utils/log";
 
 class ApiController {
     public readonly router = Router();
     private readonly upload = multer();
-    private readonly apiService = APIService;
 
     constructor() {
         this.router.post("", this.upload.single("file"), this.handleUploadFile);
@@ -21,7 +20,7 @@ class ApiController {
             if (!req.file) {
                 res.status(400).send("No file uploaded.");
             } else {
-                const savedFilename = await this.apiService.saveFileToLocalStorage(req.file);
+                const savedFilename = await apiService.saveFileToLocalStorage(req.file);
                 Log.info(`Upload de arquivo bem sucedido: ${req.file.originalname}`);
 
                 res.status(200).json({ filename: savedFilename });
@@ -37,7 +36,7 @@ class ApiController {
             if (!req.params["filename"]) {
                 res.status(400).send("No filename provided.");
             } else {
-                const file = await this.apiService.getFileFromLocalStorage(req.params["filename"]);
+                const file = await apiService.getFileFromLocalStorage(req.params["filename"]);
 
                 res.status(200).send(file);
             }
@@ -50,7 +49,7 @@ class ApiController {
     private async handleGetWABAFile(req: Request, res: Response) {
         try {
             const { url, originalname } = req.body;
-            const filename = await this.apiService.getFileFromWABAUrl(url, originalname);
+            const filename = await apiService.getFileFromWABAUrl(url, originalname);
 
             res.status(200).json({ filename });
         } catch (err) {
@@ -64,7 +63,7 @@ class ApiController {
             if (!req.params["filename"]) {
                 res.status(400).send("No filename provided.");
             } else {
-                const mediaId = await this.apiService.uploadFileToWABA(req.params["filename"]);
+                const mediaId = await apiService.uploadFileToWABA(req.params["filename"]);
 
                 res.status(200).json(mediaId);
             }
@@ -80,8 +79,8 @@ class ApiController {
             if (!req.file) {
                 res.status(400).send("No file uploaded.");
             } else {
-                const filename = await this.apiService.saveFileToLocalStorage(req.file);
-                const mediaId = await this.apiService.uploadFileToWABA(filename);
+                const filename = await apiService.saveFileToLocalStorage(req.file);
+                const mediaId = await apiService.uploadFileToWABA(filename);
 
                 res.status(200).send(mediaId);
             }

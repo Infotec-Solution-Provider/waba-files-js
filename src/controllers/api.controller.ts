@@ -38,13 +38,16 @@ class ApiController {
 
     private async handleDownloadFile(req: Request, res: Response) {
         try {
-            const filename = req.params.filename;
-            const file = await this.apiService.getFileFromLocalStorage(filename);
+            if (!req.params["filename"]) {
+                res.status(400).send("No filename provided.");
+            } else {
+                const file = await this.apiService.getFileFromLocalStorage(req.params["filename"]);
 
-            res.status(200).send(file);
+                res.status(200).send(file);
+            }
         } catch (err) {
-            Log.error(err, `Falha no download do arquivo: ${req.params.filename}`);
-            res.status(500).json({ message: `Falha no download do arquivo: ${req.params.filename}`, cause: err });
+            Log.error(err, `Falha no download do arquivo: ${req.params["filename"]}`);
+            res.status(500).json({ message: `Falha no download do arquivo: ${req.params["filename"]}`, cause: err });
         }
     }
 
@@ -62,13 +65,17 @@ class ApiController {
 
     private async handleGetWABAMediaId(req: Request, res: Response) {
         try {
-            const filename = req.params.filename;
-            const mediaId = await this.apiService.uploadFileToWABA(filename);
+            if (!req.params["filename"]) {
+                res.status(400).send("No filename provided.");
+            } else {
+                const mediaId = await this.apiService.uploadFileToWABA(req.params["filename"]);
+    
+                res.status(200).json(mediaId);
+            }
 
-            res.status(200).json(mediaId);
         } catch (err) {
-            Log.error(err, `Falha ao obter media ID WABA: ${req.params.filename}`);
-            res.status(500).json({ message: `Falha ao obter media ID WABA: ${req.params.filename}`, cause: err });
+            Log.error(err, `Falha ao obter media ID WABA: ${req.params["filename"]}`);
+            res.status(500).json({ message: `Falha ao obter media ID WABA: ${req.params["filename"]}`, cause: err });
         }
     }
 

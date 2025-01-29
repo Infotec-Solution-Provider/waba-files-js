@@ -5,8 +5,8 @@ import { config } from "dotenv";
 config();
 
 class WABAService {
-    private readonly WABAToken = process.env.WABA_TOKEN;
-    private readonly WABANumberId = process.env.WABA_NUMBER_ID;
+    private readonly WABAToken = process.env["WABA_TOKEN"];
+    private readonly WABANumberId = process.env["WABA_NUMBER_ID"];
 
     /**
      * Downloads a file from the given URL and returns it as a `File` object.

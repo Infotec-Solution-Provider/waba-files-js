@@ -34,12 +34,14 @@
       "@src/*": [
         "src/*"
       ]
-    }
+    },
+    "outDir": "./dist" /* Redirect output structure to the directory. */
   },
   "include": [
     "src/**/*"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "dist"
   ]
 }

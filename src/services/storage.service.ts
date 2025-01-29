@@ -9,7 +9,7 @@ import { config } from "dotenv";
 config();
 
 class StorageService {
-    private readonly filesPath: string = process.env.FILES_PATH || "C:/wa_files";
+    private readonly filesPath: string = process.env["FILES_PATH"] || "C:/wa_files";
 
     /**
      * Saves the provided file to the storage.

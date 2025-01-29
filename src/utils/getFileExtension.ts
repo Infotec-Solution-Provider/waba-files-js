@@ -10,5 +10,5 @@ export default function getFileExtension(filename: string): string {
     const split = filename.split(".");
     if (split.length <= 1) return ""
     
-    return split[split.length - 1];
+    return split[split.length - 1] || "";
 }

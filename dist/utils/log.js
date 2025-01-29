@@ -12,3 +12,4 @@ class Log {
     }
 }
 exports.default = Log;
+//# sourceMappingURL=log.js.map

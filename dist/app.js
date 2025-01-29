@@ -9,3 +9,4 @@ const app = (0, express_1.default)();
 app.use(express_1.default.json());
 app.use(api_controller_1.default.router);
 app.listen(Number(process.env["APP_PORT"] || "7001"));
+//# sourceMappingURL=app.js.map

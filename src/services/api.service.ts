@@ -1,14 +1,9 @@
-import StorageService from "./storage.service";
+import storageService from "./storage.service";
 import WABAService from "./waba.service";
 
 class ApiService {
-    private readonly storageService: typeof StorageService;
-    private readonly wabaService: typeof WABAService;
-
-    constructor(storageService: typeof StorageService, wabaService: typeof WABAService) {
-        this.storageService = storageService;
-        this.wabaService = wabaService;
-    }
+    private readonly storageService = storageService;
+    private readonly wabaService = WABAService;
 
     /**
      * Saves the provided file to local storage.
@@ -50,4 +45,5 @@ class ApiService {
     }
 }
 
-export default new ApiService(StorageService, WABAService);
+const apiService = new ApiService();
+export default apiService;

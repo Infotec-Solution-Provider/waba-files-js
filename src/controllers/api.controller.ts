@@ -62,14 +62,16 @@ class ApiController {
 
     private async handleGetWABAMediaId(req: Request, res: Response) {
         try {
+            Log.debug(`Iniciando handleGetWABAMediaId com filename: ${req.params["filename"]}`);
+            
             if (!req.params["filename"]) {
                 res.status(400).send("No filename provided.");
             } else {
                 const mediaId = await apiService.uploadFileToWABA(req.params["filename"]);
+                Log.debug(`Media ID obtido com sucesso: ${mediaId}`);
 
                 res.status(200).json(mediaId);
             }
-
         } catch (err) {
             Log.error(err, `Falha ao obter media ID WABA: ${req.params["filename"]}`);
             res.status(500).json({ message: `Falha ao obter media ID WABA: ${req.params["filename"]}`, cause: err });

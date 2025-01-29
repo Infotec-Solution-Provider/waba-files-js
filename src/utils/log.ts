@@ -10,4 +10,10 @@ export default class Log {
             console.error(error);
         }
     }
+
+    public static debug(message: string) {
+        if (process.env["DEBUG_MODE"] == "TRUE") {
+            console.log(`${new Date().toLocaleString()} [DEBUG] ${message}`);
+        }
+    }
 }

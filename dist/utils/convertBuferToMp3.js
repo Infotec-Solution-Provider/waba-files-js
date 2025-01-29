@@ -12,6 +12,7 @@ async function convertBufferToMp3(buffer) {
         console.log("Spawning ffmpeg process...");
         const ffmpeg = (0, node_child_process_1.spawn)('ffmpeg', [
             '-i', 'pipe:0',
+            '-f', 'mp3',
             '-c:a', 'libmp3lame',
             '-b:a', '128k',
             'pipe:1'

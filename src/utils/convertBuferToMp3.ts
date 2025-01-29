@@ -21,6 +21,7 @@ export default async function convertBufferToMp3(buffer: Buffer): Promise<Buffer
 
         const ffmpeg = spawn('ffmpeg', [
             '-i', 'pipe:0',
+            '-f', 'mp3', // Specify the output format
             '-c:a', 'libmp3lame',
             '-b:a', '128k',
             'pipe:1'

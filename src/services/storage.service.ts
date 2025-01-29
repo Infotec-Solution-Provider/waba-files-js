@@ -27,7 +27,7 @@ class StorageService {
         if (mimeType.includes("audio")) {
             buffer = await convertBufferToMp3(buffer);
             mimeType = "audio/mpeg";
-            originalname = originalname.replace(/\.[^/.]+$/, ".mp3");
+            originalname = (originalname || "file").replace(/\.[^/.]+$/, ".mp3");
         }
 
         const saveFilename = getRandomFilename(originalname);

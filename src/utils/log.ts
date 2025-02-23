@@ -11,9 +11,11 @@ export default class Log {
         }
     }
 
-    public static debug(message: string) {
+    public static debug(message: string, data?: any) {
         if (process.env["DEBUG_MODE"] == "TRUE") {
-            console.log(`${new Date().toLocaleString()} [DEBUG] ${message}`);
+            data ?
+                console.log(`${new Date().toLocaleString()} [DEBUG] ${message} | Data: `, data) : 
+                console.log(`${new Date().toLocaleString()} [DEBUG] ${message}`);
         }
     }
 }

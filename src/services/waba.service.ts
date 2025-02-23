@@ -2,6 +2,7 @@ import axios from "axios";
 import FormData from "form-data";
 import { config } from "dotenv";
 import File from "../entities/file";
+import Log from "../utils/log";
 
 config();
 
@@ -18,21 +19,25 @@ class WABAService {
      * @throws Will throw an error if the download fails or the response status is not 200.
      */
     public async downloadWABAFile(url: string, originalname: string): Promise<File> {
+        Log.debug(`Downloading file from URL: ${url}`);
         const headers = { 'Authorization': `Bearer ${this.WABAToken}` };
         const responseType = 'arraybuffer';
         const response = await axios.get(url, { headers, responseType });
 
         if (response.status !== 200) {
+            Log.error(null, `Error while downloading file. Status: ${response.status}`);
             throw new Error("Error while downloading file. Status: " + response.status);
         }
 
         const contentType = response.headers['content-type'];
+        Log.debug(`Downloaded file content type: ${contentType}`);
         const file = new File(Buffer.from(response.data), originalname, contentType);
 
         return file;
     }
 
     public async uploadWABAFile(file: File): Promise<{ id: string }> {
+        Log.debug(`Uploading file: ${file.name}`);
         const requestUrl = `https://graph.facebook.com/v16.0/${this.WABANumberId}/media`;
         const formData = new FormData();
 
@@ -43,6 +48,7 @@ class WABAService {
         const headers = { 'Authorization': `Bearer ${this.WABAToken}`, ...formData.getHeaders() };
         const mediaIdResponse = await axios.post(requestUrl, formData, { headers });
 
+        Log.debug(`Uploaded file response: ${JSON.stringify(mediaIdResponse.data)}`);
         return { ...mediaIdResponse.data, mimeType: file.type };
     }
 }

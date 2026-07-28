@@ -51,12 +51,22 @@ class ApiController {
     private async handleGetWABAFile(req: Request, res: Response) {
         try {
             const { url, originalname } = req.body;
+
+            if (!url || !originalname) {
+                res.status(400).json({
+                    message: "Campos obrigatorios ausentes: url e originalname sao obrigatorios.",
+                });
+
+                return;
+            }
+
             const filename = await apiService.getFileFromWABAUrl(url, originalname);
 
             res.status(200).json({ filename });
         } catch (err) {
-            Log.error(err, `Falha ao obter arquivo WABA: ${req.body.originalname}`);
-            res.status(500).json({ message: `Falha ao obter arquivo WABA: ${req.body.originalname}`, cause: err });
+            const originalname = req.body?.originalname || "(originalname nao informado)";
+            Log.error(err, `Falha ao obter arquivo WABA: ${originalname}`);
+            res.status(500).json({ message: `Falha ao obter arquivo WABA: ${originalname}`, cause: err });
         }
     }
 

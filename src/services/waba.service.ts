@@ -9,6 +9,24 @@ class WABAService {
     private readonly WABAToken = process.env["WABA_TOKEN"];
     private readonly WABANumberId = process.env["WABA_NUMBER_ID"];
 
+    private toErrorMessage(error: unknown): string {
+        if (axios.isAxiosError(error)) {
+            const status = error.response?.status;
+            const responseData = error.response?.data;
+            const responseDetails = typeof responseData === "string"
+                ? responseData
+                : JSON.stringify(responseData);
+
+            return `Axios error${status ? ` (status ${status})` : ""}: ${responseDetails || error.message}`;
+        }
+
+        if (error instanceof Error) {
+            return error.message;
+        }
+
+        return String(error);
+    }
+
     /**
      * Downloads a file from the given URL and returns it as a `File` object.
      *
@@ -18,9 +36,23 @@ class WABAService {
      * @throws Will throw an error if the download fails or the response status is not 200.
      */
     public async downloadWABAFile(url: string, originalname: string): Promise<File> {
+        if (!this.WABAToken) {
+            throw new Error("WABA_TOKEN is not configured");
+        }
+
+        if (!url) {
+            throw new Error("URL is required to download WABA file");
+        }
+
         const headers = { 'Authorization': `Bearer ${this.WABAToken}` };
         const responseType = 'arraybuffer';
-        const response = await axios.get(url, { headers, responseType });
+
+        let response;
+        try {
+            response = await axios.get(url, { headers, responseType });
+        } catch (error) {
+            throw new Error(`Error while downloading WABA file: ${this.toErrorMessage(error)}`);
+        }
 
         if (response.status !== 200) {
             throw new Error("Error while downloading file. Status: " + response.status);
@@ -33,6 +65,14 @@ class WABAService {
     }
 
     public async uploadWABAFile(file: File): Promise<{ id: string }> {
+        if (!this.WABAToken) {
+            throw new Error("WABA_TOKEN is not configured");
+        }
+
+        if (!this.WABANumberId) {
+            throw new Error("WABA_NUMBER_ID is not configured");
+        }
+
         const requestUrl = `https://graph.facebook.com/v16.0/${this.WABANumberId}/media`;
         const formData = new FormData();
 
@@ -41,7 +81,13 @@ class WABAService {
         formData.append("messaging_product", "whatsapp");
 
         const headers = { 'Authorization': `Bearer ${this.WABAToken}`, ...formData.getHeaders() };
-        const mediaIdResponse = await axios.post(requestUrl, formData, { headers });
+
+        let mediaIdResponse;
+        try {
+            mediaIdResponse = await axios.post(requestUrl, formData, { headers });
+        } catch (error) {
+            throw new Error(`Error while uploading WABA file: ${this.toErrorMessage(error)}`);
+        }
 
         return { ...mediaIdResponse.data, mimeType: file.type };
     }

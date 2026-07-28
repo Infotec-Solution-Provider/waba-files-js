@@ -6,6 +6,7 @@ import getOriginalFilename from "../utils/getOriginalFilename";
 import mime from "mime-types";
 import { config } from "dotenv";
 import File from "../entities/file";
+import Log from "../utils/log";
 
 config();
 
@@ -24,7 +25,10 @@ class StorageService {
      * @returns {Promise<string>} - A promise that resolves to the name of the saved file.
      */
     public async saveFile(buffer: Buffer, mimeType: string, originalname: string): Promise<string> {
+        Log.debug(`saveFile iniciado: originalname=${originalname || "(vazio)"}, mimeType=${mimeType || "(vazio)"}, filesPath=${this.filesPath}`);
+
         if (mimeType.includes("audio")) {
+            Log.debug(`saveFile convertendo audio para mp3: originalname=${originalname || "(vazio)"}`);
             buffer = await convertBufferToMp3(buffer);
             mimeType = "audio/mpeg";
             originalname = (originalname || "file").replace(/\.[^/.]+$/, ".mp3");
@@ -33,7 +37,11 @@ class StorageService {
         const saveFilename = getRandomFilename(originalname || "file");
         const savePath = join(this.filesPath, saveFilename);
 
+        Log.debug(`saveFile caminho resolvido: saveFilename=${saveFilename}, savePath=${savePath}`);
+
         await writeFile(savePath, buffer);
+
+        Log.debug(`saveFile concluido com sucesso: savePath=${savePath}`);
 
         return saveFilename;
     }
@@ -45,14 +53,27 @@ class StorageService {
      * @returns A promise that resolves to an File.
      */
     public async getFile(filename: string): Promise<File> {
+        Log.debug(`getFile iniciado: filename=${filename || "(vazio)"}, filesPath=${this.filesPath}`);
+
         const filePath = join(this.filesPath, filename);
-        const buffer = await readFile(filePath);
-        const originalname = getOriginalFilename(filename);
-        const mimetype = mime.lookup(filePath) || "";
+        Log.debug(`getFile caminho resolvido: filePath=${filePath}`);
 
-        const file = new File(buffer, originalname, mimetype);
+        try {
+            const buffer = await readFile(filePath);
+            const originalname = getOriginalFilename(filename);
+            const mimetype = mime.lookup(filePath) || "";
 
-        return file;
+            Log.debug(`getFile metadados encontrados: originalname=${originalname || "(vazio)"}, mimetype=${mimetype || "(vazio)"}, bytes=${buffer.length}`);
+
+            const file = new File(buffer, originalname, mimetype);
+
+            return file;
+        } catch (error) {
+            const errorCode = typeof error === "object" && error !== null && "code" in error ? (error as { code?: string }).code : undefined;
+            Log.error(error, `getFile falhou: filename=${filename}, filePath=${filePath}, errorCode=${errorCode || "(desconhecido)"}`);
+
+            throw new Error(`Nao foi possivel localizar o arquivo: filename=${filename}, filePath=${filePath}${errorCode ? `, errorCode=${errorCode}` : ""}`);
+        }
     }
 }
 
